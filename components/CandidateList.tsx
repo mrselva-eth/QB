@@ -102,8 +102,8 @@ export default function CandidateList() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {candidates.map((candidate) => (
-        <Card key={candidate.address} className="hover:shadow-lg transition-shadow">
+      {candidates.map((candidate, index) => (
+        <Card key={`${candidate.address}-${index}`} className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center gap-4">
             <Avatar className="w-16 h-16 border-2 border-primary/10">
               <AvatarImage src={candidate.additionalInfo.candidateImageUrl} alt={candidate.basicInfo.name} />

@@ -96,8 +96,14 @@ export default function RegisterCandidate() {
     if (!contract || !account) return
 
     try {
-      const tokenId = await contract.methods.voterTokens(account, 0).call()
-      const details = await contract.methods.getVoterDetails(tokenId).call()
+      const isRegistered = await contract.read.isVoterRegistered([account])
+      if (!isRegistered) {
+        setVoterDetails(null)
+        return
+      }
+
+      const tokenId = await contract.read.voterTokens([account, 0])
+      const details = await contract.read.getVoterDetails([tokenId])
 
       setVoterDetails({
         userId: details[0],
@@ -131,13 +137,13 @@ export default function RegisterCandidate() {
     if (!candidateContract || !account) return
 
     try {
-      const isRegistered = await candidateContract.methods.isRegisteredCandidate(account).call()
+      const isRegistered = await candidateContract.read.isRegisteredCandidate([account])
       setIsRegistered(isRegistered)
 
       if (isRegistered) {
-        const basicInfo = await candidateContract.methods.getCandidateBasicInfo(account).call()
-        const additionalInfo = await candidateContract.methods.getCandidateAdditionalInfo(account).call()
-        const metadata = await candidateContract.methods.getCandidateMetadata(account).call()
+        const basicInfo = await candidateContract.read.getCandidateBasicInfo([account])
+        const additionalInfo = await candidateContract.read.getCandidateAdditionalInfo([account])
+        const metadata = await candidateContract.read.getCandidateMetadata([account])
 
         setCandidateDetails({
           basicInfo,
@@ -208,9 +214,7 @@ export default function RegisterCandidate() {
       // Store CID in the JSON file
       await axios.post("/api/candidate-cids", { cid: ipfsHash, address: account })
 
-      await candidateContract.methods
-        .registerCandidate(formData.basicInfo, formData.additionalInfo, ipfsHash)
-        .send({ from: account })
+      await candidateContract.write.registerCandidate([formData.basicInfo, formData.additionalInfo, ipfsHash])
 
       toast.success("Successfully registered as a candidate!")
       checkCandidateRegistration()

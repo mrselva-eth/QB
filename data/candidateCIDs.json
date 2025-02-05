@@ -1,5 +1,12 @@
 {
-    "candidates": []
-  }
-  
-  
+  "candidates": [
+    {
+      "cid": "QmaYhA3viiQhdBxaQXERboMQRec9mq6m9PDh1eD9spgqLv",
+      "address": "0x603fbF99674B8ed3305Eb6EA5f3491F634A402A6"
+    },
+    {
+      "cid": "Qmd5j6rwiutxcvodbZ414LktAuJQ3X1xfKxyEo7sXRZoMn",
+      "address": "0x603fbF99674B8ed3305Eb6EA5f3491F634A402A6"
+    }
+  ]
+}

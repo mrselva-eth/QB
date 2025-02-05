@@ -2,7 +2,9 @@ import type React from "react"
 import { Web3Provider } from "@/contexts/Web3Context"
 import ClientToastContainer from "@/components/ClientToastContainer"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Providers } from "@/components/Providers"
 import "react-toastify/dist/ReactToastify.css"
+import "@rainbow-me/rainbowkit/styles.css"
 import "./globals.css"
 
 export const metadata = {
@@ -25,14 +27,16 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Web3Provider>
-            <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-              {children}
-              <ClientToastContainer />
-            </div>
-          </Web3Provider>
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <Web3Provider>
+              <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+                {children}
+                <ClientToastContainer />
+              </div>
+            </Web3Provider>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   )

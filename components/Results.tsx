@@ -45,13 +45,21 @@ const Results: React.FC = () => {
       const candidateCIDs = candidateResponse.data.candidates
       const voteCounts = voteCountResponse.data.voteCounts || {}
 
+      const validVoteCounts = Object.entries(voteCounts).reduce(
+        (acc, [key, value]) => {
+          acc[key] = typeof value === "number" ? value : 0
+          return acc
+        },
+        {} as Record<string, number>,
+      )
+
       const fetchedCandidates = await Promise.all(
         candidateCIDs.map(async (candidate: { cid: string; address: string }) => {
           const pinataResponse = await axios.get(`https://gateway.pinata.cloud/ipfs/${candidate.cid}`)
           return {
             id: candidate.address,
             name: pinataResponse.data.basicInfo.name,
-            voteCount: voteCounts[candidate.address] || 0,
+            voteCount: validVoteCounts[candidate.address] || 0,
             partyName: pinataResponse.data.basicInfo.isIndependent
               ? "Independent"
               : pinataResponse.data.basicInfo.partyName,
@@ -90,10 +98,15 @@ const Results: React.FC = () => {
       // Fetch total votes cast from local data
       const voteCountResponse = await axios.get("/api/vote-count")
       const voteCounts = voteCountResponse.data.voteCounts || {}
-      const totalVotesCast = Object.values(voteCounts).reduce(
-        (sum: number, count: unknown) => sum + (Number(count) || 0),
-        0,
+      const validVoteCounts = Object.entries(voteCounts).reduce(
+        (acc, [key, value]) => {
+          acc[key] = typeof value === "number" ? value : 0
+          return acc
+        },
+        {} as Record<string, number>,
       )
+
+      const totalVotesCast = Object.values(validVoteCounts).reduce((sum: number, count: number) => sum + count, 0)
 
       setVotingStats({
         totalVoters,
@@ -150,8 +163,8 @@ const Results: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        {candidates.map((candidate) => (
-          <Card key={candidate.id}>
+        {candidates.map((candidate, index) => (
+          <Card key={`${candidate.id}-${index}`}>
             <CardContent className="flex items-center space-x-4 p-6">
               <Avatar className="h-20 w-20">
                 <AvatarImage src={candidate.candidateImageUrl} alt={candidate.name} />

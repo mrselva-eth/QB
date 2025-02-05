@@ -38,9 +38,12 @@ const VoterRegistration: React.FC = () => {
   const checkRegistrationStatus = async () => {
     if (contract && account) {
       try {
-        const count = await contract.methods.getVoterTokenCount(account).call()
-        setRegistrationCount(Number(count))
-        setIsRegistered(Number(count) > 0)
+        const isRegistered = await contract.read.isVoterRegistered([account])
+        setIsRegistered(isRegistered)
+        if (isRegistered) {
+          const count = await contract.read.getVoterTokenCount([account])
+          setRegistrationCount(Number(count))
+        }
       } catch (error) {
         console.error("Error checking registration status:", error)
       }
@@ -163,19 +166,17 @@ const VoterRegistration: React.FC = () => {
 
       console.log("Registering voter with data:", voterData)
 
-      const transaction = await contract.methods
-        .registerVoter(
-          voterData.userId,
-          voterData.name,
-          voterData.dateOfBirth,
-          voterData.addressDetails,
-          voterData.aadhaarNumber,
-          voterData.email,
-          voterData.phoneNumber,
-          voterData.profilePictureUrl,
-          voterData.ipfsHash,
-        )
-        .send({ from: account })
+      const transaction = await contract.write.registerVoter([
+        voterData.userId,
+        voterData.name,
+        voterData.dateOfBirth,
+        voterData.addressDetails,
+        voterData.aadhaarNumber,
+        voterData.email,
+        voterData.phoneNumber,
+        voterData.profilePictureUrl,
+        voterData.ipfsHash,
+      ])
 
       console.log("Transaction result:", transaction)
 

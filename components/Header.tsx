@@ -3,12 +3,12 @@
 import type React from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { useWeb3 } from "@/contexts/Web3Context"
 import { Button } from "@/components/ui/button"
-import { UserCircle } from "lucide-react"
 
 const Header: React.FC = () => {
-  const { account, connectWallet, switchToSepolia, isSepoliaNetwork } = useWeb3()
+  const { isSepoliaNetwork, switchToSepolia } = useWeb3()
 
   return (
     <header className="bg-primary text-white shadow-lg">
@@ -52,22 +52,7 @@ const Header: React.FC = () => {
                 Switch to Sepolia
               </Button>
             )}
-            {account ? (
-              <div className="flex items-center space-x-2">
-                <Link href="/profile">
-                  <Button variant="ghost" className="p-2 hover:text-secondary">
-                    <UserCircle className="h-6 w-6" />
-                  </Button>
-                </Link>
-                <span className="bg-white/10 px-4 py-2 rounded text-sm">
-                  {account.slice(0, 6)}...{account.slice(-4)}
-                </span>
-              </div>
-            ) : (
-              <Button onClick={connectWallet} className="bg-secondary hover:bg-secondary-hover">
-                Connect Wallet
-              </Button>
-            )}
+            <ConnectButton />
           </div>
         </div>
       </div>

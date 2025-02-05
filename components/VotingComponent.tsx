@@ -39,11 +39,20 @@ export default function VotingComponent() {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
   const [confirmationStep, setConfirmationStep] = useState(0)
   const [hasVoted, setHasVoted] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     fetchCandidates()
-    checkVotingStatus()
-  }, [candidateContract]) // Removed unnecessary dependency: account
+    if (candidateContract && account) {
+      checkVotingStatus()
+    }
+  }, [candidateContract, account])
+
+  useEffect(() => {
+    if (candidateContract) {
+      setIsLoading(false)
+    }
+  }, [candidateContract])
 
   async function fetchCandidates() {
     try {
@@ -67,10 +76,12 @@ export default function VotingComponent() {
   async function checkVotingStatus() {
     if (candidateContract && account) {
       try {
-        const voted = await candidateContract.methods.hasVoted(account).call()
-        setHasVoted(voted)
+        const hasVoted = await candidateContract.read.hasVoted([account])
+        setHasVoted(hasVoted)
       } catch (error) {
         console.error("Error checking voting status:", error)
+        // Set hasVoted to false if there's an error
+        setHasVoted(false)
       }
     }
   }
@@ -148,12 +159,16 @@ export default function VotingComponent() {
     }
   }
 
+  if (isLoading) {
+    return <div>Loading voting information...</div>
+  }
+
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">Cast Your Vote</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {candidates.map((candidate) => (
-          <Card key={candidate.address}>
+        {candidates.map((candidate, index) => (
+          <Card key={`${candidate.address}-${index}`}>
             <CardHeader className="flex flex-row items-center gap-4">
               <Avatar className="w-16 h-16 border-2 border-primary/10">
                 <AvatarImage src={candidate.additionalInfo.candidateImageUrl} alt={candidate.basicInfo.name} />
