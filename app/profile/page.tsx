@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useState, useEffect } from "react"
 import { useWeb3 } from "@/contexts/Web3Context"
 import Header from "@/components/Header"
@@ -9,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ChevronRight, User, Mail, Phone, Calendar, MapPin, Shield } from "lucide-react"
 import toast from "@/utils/toast"
 
 interface UserDetails {
@@ -22,22 +22,35 @@ interface UserDetails {
   profilePictureUrl: string
 }
 
-const ProfilePage: React.FC = () => {
-  const { contract, account } = useWeb3()
+export default function ProfilePage() {
+  const { account, contract } = useWeb3()
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editedDetails, setEditedDetails] = useState<UserDetails | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetchUserDetails()
-  }, [])
+    if (contract && account) {
+      fetchUserDetails()
+    } else {
+      setIsLoading(false)
+    }
+  }, [contract, account])
 
   const fetchUserDetails = async () => {
     if (!contract || !account) return
 
     try {
-      const tokenId = await contract.methods.voterTokens(account, 0).call()
-      const details = await contract.methods.getVoterDetails(tokenId).call()
+      setIsLoading(true)
+      const isRegistered = await contract.read.isVoterRegistered([account])
+      if (!isRegistered) {
+        setUserDetails(null)
+        toast.error("You are not registered as a voter.")
+        return
+      }
+
+      const tokenId = await contract.read.voterTokens([account, 0])
+      const details = await contract.read.getVoterDetails([tokenId])
 
       const userDetails: UserDetails = {
         userId: details[0],
@@ -55,6 +68,8 @@ const ProfilePage: React.FC = () => {
     } catch (error) {
       console.error("Error fetching user details:", error)
       toast.error("Failed to fetch user details")
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -66,16 +81,14 @@ const ProfilePage: React.FC = () => {
     if (!contract || !account || !editedDetails) return
 
     try {
-      await contract.methods
-        .updateVoterDetails(
-          editedDetails.name,
-          editedDetails.dateOfBirth,
-          editedDetails.addressDetails,
-          editedDetails.email,
-          editedDetails.phoneNumber,
-          editedDetails.profilePictureUrl,
-        )
-        .send({ from: account })
+      await contract.write.updateVoterDetails([
+        editedDetails.name,
+        editedDetails.dateOfBirth,
+        editedDetails.addressDetails,
+        editedDetails.email,
+        editedDetails.phoneNumber,
+        editedDetails.profilePictureUrl,
+      ])
 
       setUserDetails(editedDetails)
       setIsEditing(false)
@@ -95,12 +108,40 @@ const ProfilePage: React.FC = () => {
     })
   }
 
+  if (isLoading) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
+          <div className="container mx-auto px-4 py-8">
+            <p className="text-center text-lg">Loading user details...</p>
+          </div>
+        </main>
+      </>
+    )
+  }
+
+  if (!account) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
+          <div className="container mx-auto px-4 py-8">
+            <p className="text-center text-lg text-red-500">Please connect your wallet to view your profile.</p>
+          </div>
+        </main>
+      </>
+    )
+  }
+
   if (!userDetails) {
     return (
       <>
         <Header />
-        <main className="container mx-auto px-4 py-8">
-          <p>Loading user details...</p>
+        <main className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
+          <div className="container mx-auto px-4 py-8">
+            <p className="text-center text-lg text-red-500">You are not registered as a voter.</p>
+          </div>
         </main>
       </>
     )
@@ -125,90 +166,155 @@ const ProfilePage: React.FC = () => {
   return (
     <>
       <Header />
-      <main className="container mx-auto px-4 py-8">
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader className="text-center pb-16">
-            <CardTitle className="text-3xl font-bold mb-8">User Profile</CardTitle>
-          </CardHeader>
-          <div className="flex justify-center -mt-20 mb-8">
-            <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
-              <AvatarImage src={userDetails.profilePictureUrl} alt={userDetails.name} />
-              <AvatarFallback className="text-4xl">
-                {userDetails.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
+      <main className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
+        {/* Hero Section */}
+        <section className="relative bg-primary py-20 text-white overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+          <div className="container mx-auto px-4 relative">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-12">
+              <div className="flex-1 space-y-6">
+                <div className="space-y-4">
+                  <h1 className="text-5xl md:text-6xl font-bold leading-tight">
+                    Your <span className="text-secondary">Profile</span>
+                  </h1>
+                  <p className="text-xl md:text-2xl text-gray-200">Manage your voter information</p>
+                </div>
+                <div className="flex gap-4">
+                  <Button size="lg" className="bg-secondary hover:bg-secondary-hover" onClick={handleEdit}>
+                    Edit Profile <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="flex-1 flex justify-center">
+                <Avatar className="w-48 h-48 border-4 border-white shadow-lg">
+                  <AvatarImage src={userDetails.profilePictureUrl} alt={userDetails.name} />
+                  <AvatarFallback className="text-6xl bg-gradient-to-r from-[#38BDF8] via-[#86EFAC] to-[#4ADE80]">
+                    {userDetails.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+            </div>
           </div>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <Label className="text-sm text-blue-600/75">UserId</Label>
-                <p className="text-lg text-gray-900">{userDetails.userId}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Name</Label>
-                {isEditing ? (
-                  <Input name="name" value={editedDetails?.name} onChange={handleInputChange} />
-                ) : (
-                  <p className="text-lg font-semibold">{userDetails.name}</p>
-                )}
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Date of Birth</Label>
-                {isEditing ? (
-                  <Input
-                    name="dateOfBirth"
-                    value={editedDetails?.dateOfBirth}
+        </section>
+
+        {/* Profile Details Section */}
+        <section className="py-20">
+          <div className="container mx-auto px-4">
+            <Card className="max-w-4xl mx-auto">
+              <CardHeader>
+                <CardTitle className="text-3xl font-bold text-primary">Voter Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <ProfileField
+                    icon={<User className="text-primary" />}
+                    label="User ID"
+                    value={userDetails.userId}
+                    isEditable={false}
+                  />
+                  <ProfileField
+                    icon={<User className="text-primary" />}
+                    label="Name"
+                    value={userDetails.name}
+                    isEditing={isEditing}
+                    editedValue={editedDetails?.name}
                     onChange={handleInputChange}
+                    name="name"
+                  />
+                  <ProfileField
+                    icon={<Calendar className="text-primary" />}
+                    label="Date of Birth"
+                    value={userDetails.dateOfBirth}
+                    isEditing={isEditing}
+                    editedValue={editedDetails?.dateOfBirth}
+                    onChange={handleInputChange}
+                    name="dateOfBirth"
                     type="date"
                   />
-                ) : (
-                  <p className="text-lg font-semibold">{userDetails.dateOfBirth}</p>
+                  <ProfileField
+                    icon={<MapPin className="text-primary" />}
+                    label="Address"
+                    value={`${addressDetails.houseNumber}, ${addressDetails.area}, ${addressDetails.town}, ${addressDetails.taluk} - ${addressDetails.pinCode}`}
+                    isEditable={false}
+                  />
+                  <ProfileField
+                    icon={<Shield className="text-primary" />}
+                    label="Aadhaar Number"
+                    value={userDetails.aadhaarNumber}
+                    isEditable={false}
+                  />
+                  <ProfileField
+                    icon={<Mail className="text-primary" />}
+                    label="Email"
+                    value={userDetails.email}
+                    isEditing={isEditing}
+                    editedValue={editedDetails?.email}
+                    onChange={handleInputChange}
+                    name="email"
+                    type="email"
+                  />
+                  <ProfileField
+                    icon={<Phone className="text-primary" />}
+                    label="Phone Number"
+                    value={userDetails.phoneNumber}
+                    isEditing={isEditing}
+                    editedValue={editedDetails?.phoneNumber}
+                    onChange={handleInputChange}
+                    name="phoneNumber"
+                  />
+                </div>
+                {isEditing && (
+                  <div className="mt-6 flex justify-end">
+                    <Button onClick={handleSave} className="bg-primary text-white hover:bg-primary/90">
+                      Save Changes
+                    </Button>
+                  </div>
                 )}
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Address Details</Label>
-                <p className="text-lg font-semibold">
-                  {`${addressDetails.houseNumber}, ${addressDetails.area}, ${addressDetails.town}, ${addressDetails.taluk} - ${addressDetails.pinCode}`}
-                </p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Aadhaar Number</Label>
-                <p className="text-lg font-semibold">{userDetails.aadhaarNumber}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Email</Label>
-                {isEditing ? (
-                  <Input name="email" value={editedDetails?.email} onChange={handleInputChange} type="email" />
-                ) : (
-                  <p className="text-lg font-semibold">{userDetails.email}</p>
-                )}
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Phone Number</Label>
-                {isEditing ? (
-                  <Input name="phoneNumber" value={editedDetails?.phoneNumber} onChange={handleInputChange} />
-                ) : (
-                  <p className="text-lg font-semibold">{userDetails.phoneNumber}</p>
-                )}
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end px-6 pb-6">
-              <Button
-                onClick={isEditing ? handleSave : handleEdit}
-                className="bg-[#0f172a] text-white hover:bg-[#1e293b]"
-              >
-                {isEditing ? "Save Changes" : "Edit Profile"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
       </main>
     </>
   )
 }
 
-export default ProfilePage
+interface ProfileFieldProps {
+  icon: React.ReactNode
+  label: string
+  value: string
+  isEditable?: boolean
+  isEditing?: boolean
+  editedValue?: string
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
+  name?: string
+  type?: string
+}
+
+const ProfileField: React.FC<ProfileFieldProps> = ({
+  icon,
+  label,
+  value,
+  isEditable = true,
+  isEditing = false,
+  editedValue,
+  onChange,
+  name,
+  type = "text",
+}) => (
+  <div className="flex items-center space-x-4">
+    <div className="flex-shrink-0">{icon}</div>
+    <div className="flex-grow">
+      <Label className="text-sm font-medium text-gray-500">{label}</Label>
+      {isEditing && isEditable ? (
+        <Input name={name} value={editedValue} onChange={onChange} type={type} className="mt-1" />
+      ) : (
+        <p className="text-lg font-semibold text-gray-900">{value}</p>
+      )}
+    </div>
+  </div>
+)
 
