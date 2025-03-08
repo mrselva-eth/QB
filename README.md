@@ -2,6 +2,12 @@
 
 QB Vote is a secure and transparent blockchain-based voting system built with Next.js and Ethereum. This project aims to provide a reliable platform for conducting elections with the benefits of blockchain technology.
 
+## Interface 
+
+![image](https://github.com/user-attachments/assets/6d547766-d7ba-4962-b9b3-17c25e38cb07)
+
+## Deployed link : https://qb-eosin.vercel.app/
+
 ## Features
 
 - Secure voter registration
